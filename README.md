@@ -15,5 +15,22 @@ We combined and cleaned two publicly available datasets from **Kaggle**:
 - [IMDb Top 2000 Movies Dataset](https://www.kaggle.com/datasets/prishasawhney/imdb-dataset-top-2000-movies): Contains IMDb ratings, release year, genres, and more.
 - [The Movies Dataset by Rounak Banik](https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset): Includes production budget and other metadata.
 
-We merged the datasets by matching movie titles to ensure each observation contained all required variables: IMDb rating, Metascore, release year, genre, production budget, and gross revenue.
+We merged the datasets by matching movie titles to ensure each observation contained all required variables: IMDb rating, Metascore, release year, genre, production budget, and gross revenue. Note that the dataset provided in this repository is the combined one.
+
+### Key Steps:
+1. **Exploratory Data Analysis (EDA)**:
+   - Visualized the distribution of each variable using histograms and pie charts.
+   - Identified skewness and potential outliers.
+2. **Initial Model Building**:
+   - Fitted a multiple linear regression model using raw variables.
+   - Performed diagnostic checks for linearity, homoscedasticity, normality of residuals, and multicollinearity.
+3. **Box-Cox Transformation**:
+   - Applied transformation to meet regression assumptions.
+   - Improved model fit and residual diagnostics.
+4. **Variable Selection**:
+   - Conducted F-tests, t-tests, and Partial F-tests to determine the significance of each predictor.
+5. **Model Validation**:
+   - Detected and analyzed influential points using standardized residuals, leverage values, and Cook's distance.
+   - Evaluated model fit using adjusted R-squared and residual plots.
+
 
