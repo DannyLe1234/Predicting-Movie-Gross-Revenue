@@ -53,9 +53,11 @@ We merged the datasets by matching movie titles to ensure each observation conta
 - **Outliers and leverage points** were investigated, and influential observations were either retained or automatically excluded by R.
 
 This repository contains the following files:
--**Final Proposal**
--**Final Report**
--**QMD file of the R codes used**
+- **Final Proposal**
+
+- **Final Report**
+
+- **QMD file of the R codes used**
 
 
 
