@@ -5,7 +5,7 @@ This is a group based project that I made for the course **STA302: Method of Dat
 ## 🎯 Project Objective
 Answer this question:
 
-**To what extent can IMDb rating, Metascore, Release Year, Movie Genre, and Production Cost predict the Gross Revenue of Movies?**
+**To what extent can :rating: IMDb rating, :score: Metascore, :year: Release Year, :genre: Movie Genre, and :cost: Production Cost predict the Gross Revenue of Movies?**
 
 This study / report investigates how **audience reviews**, **critics** **production budgets**, and **genre choices** influence a movie’s box office performance. We aim to identify statistically significant predictors that can help decision-makers allocate resources more effectively and reduce financial risk.
 
