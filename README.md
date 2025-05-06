@@ -9,5 +9,11 @@ Answer this question:
 
 This study / report investigates how **audience reviews**, **critics** **production budgets**, and **genre choices** influence a movie’s box office performance. We aim to identify statistically significant predictors that can help decision-makers allocate resources more effectively and reduce financial risk.
 
+## 📊 Dataset Description
 
+We combined and cleaned two publicly available datasets from **Kaggle**:
+- [IMDb Top 2000 Movies Dataset](https://www.kaggle.com/datasets/prishasawhney/imdb-dataset-top-2000-movies): Contains IMDb ratings, release year, genres, and more.
+- [The Movies Dataset by Rounak Banik](https://www.kaggle.com/datasets/rounakbanik/the-movies-dataset): Includes production budget and other metadata.
+
+We merged the datasets by matching movie titles to ensure each observation contained all required variables: IMDb rating, Metascore, release year, genre, production budget, and gross revenue.
 
