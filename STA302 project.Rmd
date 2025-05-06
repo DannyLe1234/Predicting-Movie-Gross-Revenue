@@ -1,0 +1,588 @@
+---
+title: "Research Proposal"
+output: pdf_document
+date: "2024-10-07"
+---
+
+#Data Cleaning Description To make the data useable, a data cleaning process has been implemented using Excel prior importing into RStudio Environment
+
+Step 1: Cleaning the IMDB Dataset by dealing with incomplete movie entries
+
+The dataset was converted from csv to xlsx type for best performance in Excel. At this point we noticed a considerably amount of incomplete "movies" where numerous cells such as: Genre,etc. was either "1","0" or empty.
+
+The incomplete movies were removed by applying filter on the whole worksheet. This allow us to eliminate incomplete entries under each columns by filter out entries that are empty
+
+Step 2: Cleaning the IMDB Dataset by removing text in the "gross" column The IMDB dataset record the gross revenue as "\$[number]M", this format is not ideal for implementing in R
+
+To solve this issue we created a blank cell next to it and named this cell as "GrossRevenue" where we converted the gross revenue from string into number formats and store it here
+
+The Excel formula used for this step is: =IF(RIGHT(J2,1)="M", SUBSTITUTE(MID(J2,2,LEN(J2)-2),"M","")\*1000000, J2)
+
+This formula converted gross revenues into proper number format. Ex: "\$134M" to "134,000,000"
+
+Step 3: Cleaning the Movie Dataset The dataset was converted from csv to xlsx type for best performance in Excel. We deleted all the unecessary columns only retaining movie name and budget / production cost
+
+We then export this worksheet (named "movie_metadata") into the IMDB Dataset and use this as reference table to match the Budget/Production Cost to the appropriate movie by matching movie name
+
+We created an empty "Budget Column" in the original IMDB dataset (under worksheet "imdb_top_2000_movies"). We will store all the correct Budget figures here
+
+The Excel formula used for merging the Budget data is: =IFERROR(VLOOKUP(A2,movies_metadata!\$B$2:$D\$45467,3,FALSE),"NA")
+
+The nested Vlookup formula returns the production cost by matching the Movies name under the "Movie Name" column from the "imdb_top_2000_movies" with the one of "movie_metadata" where we stored all the production cost. The code returns NA for any missing values or if it could not find the data.
+
+Once this step is done, we apply one final filter on Budget column to remove all the NA's. This worksheet at this stage is almost done and ready to have the genre column to be clean
+
+Step 4: Export the worksheet as a separate Excel file (named IMDB Cleaned Dang) We export the "imdb_top_2000_movies" worksheet as a separate Excel file for convenience purpose when importing dataset into RStudio
+
+Step 5: Perform Final cleaning on movie Genre At this stage, we noticed that there are multiple movies that has multiple genres. We decide to keep only the first genre. Ex: if a movie has its genre entry as "Crime,Drama" we will convert it to "Crime"
+
+This process is done through Excel feature "Text to Columns", the process is as follow: 1st: highlight entire "Genre" Column 2nd: Access Text to Column Feature, we choose "delimited" and click "Next" 3rd: Under Delimiters we choose to separate "genre" by comma, this breaks the string in the column by every comma that it encounters then click next 4rd: we choose the column data format as text.
+
+Now all the genre are converted and the data cleaning process is completed
+
+#Summary of Response Variable
+
+```{r}
+#import Data
+library(readr)
+IMDB_CLEANED_DANG <- read_csv("/Users/phamhieu/Desktop/U Of T COURSES/STA'S/STA302/Final Project/Dataset/IMDB CLEANED DANG.csv")
+View(IMDB_CLEANED_DANG)
+
+#Summary of Response Variable
+summary(IMDB_CLEANED_DANG$GrossRevenue) 
+sd(IMDB_CLEANED_DANG$GrossRevenue)
+```
+
+# Response Variable plot
+
+```{r}
+#Graphical Representation of the Response Variable
+h <- hist(IMDB_CLEANED_DANG$GrossRevenue, plot = FALSE)
+
+hist(IMDB_CLEANED_DANG$GrossRevenue, 
+     main = "Distribution of Gross Revenue", 
+     xlab = "Gross Revenue", col = "lightblue", border = "black", 
+     ylim = range(0,900), xaxt = "n")
+
+# Add custom x-axis labels and number counts with more decimals
+x_ticks <- seq(0,800000000, by =100000000)
+axis(1,at = x_ticks, labels = format(x_ticks,big.mark = ",", scientific = FALSE))
+text(h$mids, h$counts, labels = h$counts, adj = c(0.5, -0.5), col = "black")
+
+```
+
+#Summary of Predictor Variables
+
+```{r}
+#Summary of IMDB Rating
+summary(IMDB_CLEANED_DANG$IMDBRating)
+sd(IMDB_CLEANED_DANG$IMDBRating)
+```
+
+```{r}
+library(knitr)
+#Summary of MetaScore
+summary(IMDB_CLEANED_DANG$Metascore)
+sd(IMDB_CLEANED_DANG$Metascore)
+```
+
+```{r}
+#Summary of Release Year
+summary(IMDB_CLEANED_DANG$ReleaseYear)
+sd(IMDB_CLEANED_DANG$ReleaseYear)
+```
+
+```{r}
+#Summary of Production Cost
+summary(IMDB_CLEANED_DANG$Budget)
+sd(IMDB_CLEANED_DANG$Budget)
+```
+
+#Predictor Variable Plots
+
+```{r}
+par(mfrow=c(2,2))
+
+hist(IMDB_CLEANED_DANG$IMDBRating, main = "Distribution of IMDB Rating",
+     xlab="IMDB Rating", col = "lightblue", border ="black", ylim = range(0,400))
+x_ticks <- seq(0,11, by =1)
+axis(1,at = x_ticks)
+
+hist(IMDB_CLEANED_DANG$Metascore, main = "Distribution of Metascore",
+     xlab="Metascore", col = "lightblue", border ="black", ylim = range(0,400),)
+x_ticks <- seq(0,100, by =10)
+axis(1,at = x_ticks)
+
+hist(IMDB_CLEANED_DANG$ReleaseYear, main = "Distribution of Release Year",
+     xlab="Release", col = "lightblue", border ="black", ylim = range(0,600),)
+x_ticks <- seq(1920,2020, by =20)
+axis(1,at = x_ticks)
+
+hist(IMDB_CLEANED_DANG$Budget, main = "Distribution of Production Cost",
+     xlab="Production Cost", col = "lightblue", border ="black", ylim = range(0,700),xaxt="n")
+x_ticks <- seq(0,300000000,by=20000000)
+axis(1,at = x_ticks, labels = format(x_ticks,big.mark = ",", scientific = FALSE))
+
+```
+
+#Categorical Variable Plot
+
+```{r}
+#create pie chart for movie genre
+genre_count <- table(IMDB_CLEANED_DANG$Genre)
+
+pie(genre_count, 
+    main = "Distribution of Movie Genres", col = rainbow(length(genre_count)),
+    labels = NA)
+
+#Add legend
+legend("topright", legend = paste(names(genre_count), genre_count), 
+       fill = rainbow(length(genre_count)), cex = 0.8)
+
+```
+
+#Preliminary Result and Residual Analysis
+
+```{r}
+#Fitting the regression
+model <- lm(GrossRevenue~Genre+IMDBRating+Metascore+ReleaseYear+Budget,data=IMDB_CLEANED_DANG)
+options(max.print = 2000)
+
+summary(model)
+```
+
+##linearity Assumption
+
+```{r}
+fitted_val= fitted(model)
+residual_val = resid(model)
+
+plot(fitted_val,residual_val,main="Fitted versus Residual Values"
+     ,xlab="Fitted",ylab="Residuals")
+
+plot(model,which=1)
+
+#plotting Response against predictor
+par(mfrow = c(2, 2))  # This sets up a 2x2 grid for the plots
+
+# Plot 1: GrossRevenue vs Metascore
+plot(IMDB_CLEANED_DANG$Metascore, IMDB_CLEANED_DANG$GrossRevenue,
+     xlab = "Metascore", ylab = "GrossRevenue", main = "GrossRevenue vs Metascore")
+
+# Plot 2: GrossRevenue vs IMDBRating
+plot(IMDB_CLEANED_DANG$IMDBRating, IMDB_CLEANED_DANG$GrossRevenue,
+     xlab = "IMDB Rating", ylab = "GrossRevenue", main = "GrossRevenue vs IMDB Rating")
+
+# Plot 3: GrossRevenue vs Budget
+plot(IMDB_CLEANED_DANG$Budget, IMDB_CLEANED_DANG$GrossRevenue,
+     xlab = "Budget", ylab = "GrossRevenue", main = "GrossRevenue vs Budget")
+
+# Plot 4: GrossRevenue vs Release Year
+plot(IMDB_CLEANED_DANG$ReleaseYear, IMDB_CLEANED_DANG$GrossRevenue,
+     xlab = "Release Year", ylab = "GrossRevenue", main = "GrossRevenue vs Release Year")
+```
+
+##Constant Variance, Homoscedascity
+
+```{r}
+fitted_val= fitted(model)
+stndresid = rstandard(model)
+
+plot(fitted_val,stndresid,main="Fitted versus Standardized Residual"
+     ,xlab="Fitted",ylab="Residuals")
+
+plot(model,which=3)
+
+```
+
+##Normality of Error
+
+```{r}
+plot(model,which =2)
+```
+
+##No Multicollineariry
+
+```{r}
+#Scatterplot matrix of all the predictor variables
+plot(IMDB_CLEANED_DANG[,c(2,4,5,10)],col="cadetblue")
+```
+
+# Performing Transformation on the Preliminary model
+```{r}
+#Box-Cox Transformation
+library(MASS)
+library(webshot2)
+png("boxcox.png")
+par(mfrow=c(2,2))
+boxcox(model)
+boxcox(model, lambda = seq(0, 1, by = 0.1))
+boxcox(model, lambda = seq(0, 0.6, by = 0.1))
+boxcox(model, lambda = seq(0.3, 0.6, by = 0.05))
+dev.off()
+#From the result of the box0cox transformation, we can see that the optimal lambda is between 0.3 and 0.4
+#We will use the optimal lambda = 0.35 to transform the response variable
+
+#Assign variables
+IMDB_CLEANED_DANG$GrossRevenue_bxcx <- IMDB_CLEANED_DANG$GrossRevenue^0.3482828
+IMDB_CLEANED_DANG$IMDBRating_bxcx <- IMDB_CLEANED_DANG$IMDBRating^0.3482828
+IMDB_CLEANED_DANG$Metascore_bxcx <- IMDB_CLEANED_DANG$Metascore^0.3482828
+IMDB_CLEANED_DANG$ReleaseYear_bxcx <- IMDB_CLEANED_DANG$ReleaseYear^0.3482828
+IMDB_CLEANED_DANG$Budget_bxcx <- IMDB_CLEANED_DANG$Budget^0.3482828
+
+#Fit the transformed model
+model2 <- lm(GrossRevenue_bxcx~Genre+IMDBRating_bxcx+Metascore_bxcx+ReleaseYear_bxcx+Budget_bxcx,data=IMDB_CLEANED_DANG)
+summary(model2)
+
+```
+
+
+#Assumption Checking on the Transformed Model
+
+##linearity Assumption 
+
+```{r}
+fitted_val2= fitted(model2)
+residual_val2 = resid(model2)
+
+plot(fitted_val2,residual_val2,main="Fitted versus Residual Values"
+     ,xlab="Fitted",ylab="Residuals")
+
+plot(model2,which=1)
+
+```
+
+
+##Constant Variance, Homoscedascity
+
+```{r}
+fitted_val2 = fitted(model2)
+stndresid2 = rstandard(model2)
+
+plot(fitted_val2,stndresid2,main="Fitted versus Standardized Residual"
+     ,xlab="Fitted",ylab="Residuals")
+
+
+plot(model2,which=3)
+```
+
+
+##Normality of Error
+
+```{r}
+png("transformed_qqplot.png", width =800, height = 600)
+plot(model2,which =2)
+dev.off()
+#We can see that the assumption improves significantly despite minor skewness in QQ plot right tail
+```
+
+## VIF on all predictor variables
+
+```{r}
+
+#VIF on all predictor variables
+library(car)
+library(broom)
+library(tibble)
+library(webshot2)
+library(flextable)
+vif_value <- vif(model2)
+
+vif_df <- as.data.frame(vif_value) %>%
+  rownames_to_column(var = "Predictor") 
+
+# Create a flextable
+vif_table <- flextable(vif_df) %>% 
+  set_caption(caption = "VIF Values for Each Predictor") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(vif_table)
+
+```
+
+##F- Test on overall model
+```{r}
+#F-Test on the Overall Model
+library(broom)
+library(flextable)
+library(webshot2)
+library(dplyr)
+
+model2_null <- lm(GrossRevenue_bxcx~1,data=IMDB_CLEANED_DANG)
+anova(model2_null,model2)
+
+anova_value <- anova(model2_null,model2)
+anova_df <- tidy(anova_value)
+anova_df <- anova_df %>% mutate(p.value = format(p.value,statistic=TRUE,digits = 2))
+
+
+anova_table <- flextable(anova_df) %>% 
+  set_caption(caption = "F Test on Overall Model") %>%
+  autofit() %>%
+  theme_vanilla()
+print(anova_table)
+
+
+#The p-value is less than 0.05, we reject the null hypothesis and conclude that the model is significant
+```
+
+##T-Test on each predictor variable
+```{r}
+#T-Test on each predictor variable
+library(tidyverse)
+
+#list of predictors for the T-Test
+predictors <- c("IMDBRating_bxcx","Metascore_bxcx","ReleaseYear_bxcx","Budget_bxcx","Votes","Duration")
+
+#Empty list to store the results
+results <- list()
+
+#Loop thru each predictor and perform the linear regression
+
+for (predictors in predictors) {
+   formula <- as.formula(paste("(GrossRevenue)^0.35 ~ (",predictors,")", sep ="")) 
+   model <- lm(formula, data = IMDB_CLEANED_DANG)
+   results[[predictors]] <- summary(model)$coefficients[2,4]}
+
+
+
+result_df <- data.frame(Predictor=names(results),P_value=round(unlist(results),10))
+result_table <- flextable(result_df) %>% 
+  set_caption(caption = "T-Test on each predictor variable") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(result_table)
+
+#From the T-Test we can conclude that individually, Release Year, Budget, Votes and Duration are significant predictors of Gross Revenue
+
+```
+
+
+##Partial F-Test on subset of predictors
+```{r}
+library(dplyr) # For data manipulation
+library(broom) # For tidy() functions
+library(flextable) # For creating tables
+
+#SUBSET 1 - Remove IMDB and Metascore
+model2_reduced <- lm(GrossRevenue_bxcx~Genre+ReleaseYear_bxcx+Budget_bxcx,data=IMDB_CLEANED_DANG)
+anova(model2_reduced,model2)
+summary(model2_reduced)
+
+# Partial F-Test Table
+anova_partial <- anova(model2_reduced, model2)
+anova_partial_df <- tidy(anova_partial) %>%
+  mutate(p.value = format(p.value, scientific = TRUE, digits = 2)) # Format p-value
+
+anova_table <- flextable(anova_partial_df) %>%
+  set_caption(caption = "Partial F-Test Results") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(anova_table)
+#p-value is less than 0.05, so we reject the null hypothesis and conclude that at least one of IMDB and MetaScore are significant predictors of Gross Revenue
+
+#SUBSET 2 - Remove IMDB
+model2_reduced <- lm(GrossRevenue_bxcx~Genre+Metascore_bxcx+ReleaseYear_bxcx+Budget_bxcx,data=IMDB_CLEANED_DANG)
+anova(model2_reduced,model2)
+summary(model2_reduced)
+
+# Partial F-Test Table
+anova_partial <- anova(model2_reduced, model2)
+anova_partial_df <- tidy(anova_partial) %>%
+  mutate(p.value = format(p.value, scientific = TRUE, digits = 2)) # Format p-value
+
+anova_table <- flextable(anova_partial_df) %>%
+  set_caption(caption = "Partial F-Test Results") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(anova_table)
+#p-value is less than 0.05, so we reject the null hypothesis and conclude that IMDB is a significant predictors of Gross Revenue
+
+#subset3 - Remove Metascore
+model2_reduced <- lm(GrossRevenue_bxcx~Genre+IMDBRating_bxcx+ReleaseYear_bxcx+Budget_bxcx,data=IMDB_CLEANED_DANG)
+anova(model2_reduced,model2)
+summary(model2_reduced)
+
+# Partial F-Test Table
+anova_partial <- anova(model2_reduced, model2)
+anova_partial_df <- tidy(anova_partial) %>%
+  mutate(p.value = format(p.value, scientific = TRUE, digits = 2)) # Format p-value
+
+anova_table <- flextable(anova_partial_df) %>%
+  set_caption(caption = "Partial F-Test Results") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(anova_table)
+#p-value is less than 0.05, so we reject the null hypothesis and conclude that Metascore is a significant predictors of Gross Revenue
+
+#subset4 - Remove Release Year and Budget
+model2_reduced <- lm(GrossRevenue_bxcx~Genre+IMDBRating_bxcx+Metascore_bxcx,data=IMDB_CLEANED_DANG)
+anova(model2_reduced,model2)
+summary(model2_reduced)
+
+# Partial F-Test Table
+anova_partial <- anova(model2_reduced, model2)
+anova_partial_df <- tidy(anova_partial) %>%
+  mutate(p.value = format(p.value, scientific = TRUE, digits = 2)) # Format p-value
+
+anova_table <- flextable(anova_partial_df) %>%
+  set_caption(caption = "Partial F-Test Results") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(anova_table)
+#p-value is less than 0.05, so we reject the null hypothesis and conclude that at least one of Release Year and Budget are significant predictors of Gross Revenue
+
+#subset5 - Remove Realease Year
+model2_reduced <- lm(GrossRevenue_bxcx~Genre+IMDBRating_bxcx+Metascore_bxcx+Budget_bxcx,data=IMDB_CLEANED_DANG)
+anova(model2_reduced,model2)
+summary(model2_reduced)
+#p-value is less than 0.05, so we reject the null hypothesis and conclude that Release Year is a significant predictors of Gross Revenue
+
+# Partial F-Test Table
+anova_partial <- anova(model2_reduced, model2)
+anova_partial_df <- tidy(anova_partial) %>%
+  mutate(p.value = format(p.value, scientific = TRUE, digits = 2)) # Format p-value
+
+anova_table <- flextable(anova_partial_df) %>%
+  set_caption(caption = "Partial F-Test Results") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(anova_table)
+#p-value is less than 0.05, so we reject the null hypothesis and conclude that at least one of Release Year and Budget are significant predictors of Gross Revenue
+
+
+#subset6 - Remove Budget
+model2_reduced <- lm(GrossRevenue_bxcx~Genre+IMDBRating_bxcx+Metascore_bxcx+ReleaseYear_bxcx,data=IMDB_CLEANED_DANG)
+anova(model2_reduced,model2)
+summary(model2_reduced)
+
+# Partial F-Test Table
+anova_partial <- anova(model2_reduced, model2)
+anova_partial_df <- tidy(anova_partial) %>%
+  mutate(p.value = format(p.value, scientific = TRUE, digits = 2)) # Format p-value
+
+anova_table <- flextable(anova_partial_df) %>%
+  set_caption(caption = "Partial F-Test Results") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(anova_table)
+#p-value is less than 0.05, so we reject the null hypothesis and conclude that Budget is a significant predictors of Gross Revenue
+
+#subset7 - Remove Genre
+model2_reduced <- lm(GrossRevenue_bxcx~IMDBRating_bxcx+Metascore_bxcx+ReleaseYear_bxcx+Budget_bxcx,data=IMDB_CLEANED_DANG)
+anova(model2_reduced,model2)
+summary(model2_reduced)
+
+# Partial F-Test Table
+anova_partial <- anova(model2_reduced, model2)
+anova_partial_df <- tidy(anova_partial) %>%
+  mutate(p.value = format(p.value, scientific = TRUE, digits = 2)) # Format p-value
+
+anova_table <- flextable(anova_partial_df) %>%
+  set_caption(caption = "Partial F-Test Results") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(anova_table)
+#p-value is less than 0.05, so we reject the null hypothesis and conclude that Genre is a significant predictors of Gross Revenue
+
+
+#Since all predictors are significant, we will keep all the predictors in the model and conclude that 
+#This is the best possible model to predict Gross Revenue
+```
+##Analyzing Problematic Observations
+```{r}
+#Regression Diagnostic
+par(mfrow=c(2,2))
+plot(model2,which=c(1,2,3,4))
+
+#From Basic Plot Diagnostic we can see that there are some problematic observations in the data:
+# 146,157,260,1203,1500 are observations that need further investigation
+
+
+#Detecting Outliers
+outliers <- abs(rstandard(model2)[c(146,157,260,1203,1500)])
+outliers_df <- data.frame(Observation=c(146,157,260,1203,1500),Standardized_Residuals=outliers)
+                      
+outliers_table <- flextable(outliers_df) %>%
+  set_caption(caption = "Observations Standardized Residuals ") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(outliers_table)
+
+
+#By the cutoff rule (>3), the following observations are considered as outliers
+#146,260,1500
+
+
+#Detecting High Leverage Points
+#Leverage value on all problematic observations:
+lvg_value <- hatvalues(model2)[c(146,157,260,1203,1500,139,980,1379)]
+
+avg_lvrg_val <- 2*mean(hatvalues(model2))
+
+lvg_value.df <- data.frame(Observation=c(146,157,260,1203,1500,139,980,1379),Leverage_Value=lvg_value)
+lvg_val_table <- flextable(lvg_value.df) %>%
+  set_caption(caption = "Leverage Values for Problematic Observations") %>%
+  autofit() %>%
+  theme_vanilla()
+print(lvg_val_table)
+  
+
+#BY the cutoff rules, the following observations are considered as high leverage points
+#146,157,1203,139,980,1379
+
+#Observations 260 and 1500 are not leverage points
+
+#Detecting Influential Points by Cook's Distance
+#Cook's Distance on all problematic observations
+cooks<-cooks.distance(model2)[c(146,157,260,1203,1500)]
+cooks_df <- data.frame(Observation=c(146,157,260,1203,1500),Cook_Distance=cooks)
+cooks_table <- flextable(cooks_df) %>%
+  set_caption(caption = "Cook's Distance for Problematic Observations") %>%
+  autofit() %>%
+  theme_vanilla()
+print(cooks_table)
+
+
+n <- nrow(IMDB_CLEANED_DANG)
+median_f <- qf(0.5,5+1,n-5-1)
+
+#By the cutoff rule none of the observations are considered as influential points except for the ones that were excluded by R.
+
+
+#Inspecting the problematic observations to see if we can remove or not
+obs_146 <- IMDB_CLEANED_DANG[146,]
+obs_157 <- IMDB_CLEANED_DANG[157,]
+obs_260 <- IMDB_CLEANED_DANG[260,]
+obs_1203 <- IMDB_CLEANED_DANG[1203,]
+obs_1500 <- IMDB_CLEANED_DANG[1500,]
+obs_139 <- IMDB_CLEANED_DANG[139,]
+obs_980 <- IMDB_CLEANED_DANG[980,]
+obs_1397<- IMDB_CLEANED_DANG[1379,]
+
+observation_list <- list(obs_146, obs_157, obs_260, obs_1203, obs_1500, obs_139, obs_980, obs_1379)
+
+final_table <- do.call(rbind, observation_list) %>%
+  select(MovieName, ReleaseYear, Duration, IMDBRating, Metascore, Votes, Genre, GrossRevenue, Budget)
+final_table_df <- as.data.frame(final_table)
+fintable <- flextable(final_table_df) %>%
+  set_caption(caption = "Investigating Problematic Observations") %>%
+  autofit() %>%
+  theme_vanilla()
+
+print(fintable)
+```
+
+
+
+
